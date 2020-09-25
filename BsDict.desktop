@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BSDict
+GenericName=Beigesoft™ dictionary
+Comment=Beigesoft™ GTK2 based dictionary
+Exec=BsDict
+Icon=bssoft
+Terminal=false
+Categories=Office;Dictionary;Education;

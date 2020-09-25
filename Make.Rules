@@ -1,0 +1,5 @@
+PREFIX=/usr/local
+CC=gcc
+LD=$(CC)
+CFLAGS=-g -O0 -Wall
+LDFLAGS=
