@@ -138,9 +138,13 @@ static void
   }
   if ( sCuIdx != -1 )
   {
-    int i = sHist->size - 1 - sCuIdx;
+    int i = sCuIdx;
     if ( sSortAb )
-            { i = sIdxSetAb->vals[i]; }
+    {
+      i = sIdxSetAb->vals[i];
+    } else {
+      i = sHist->size - 1 - sCuIdx;
+    }
     gtk_list_select_item (((GtkList*) sGtkList), i);
   }
 }
@@ -355,7 +359,7 @@ static void
       {
         sCuIdx--;
       } else if ( sHist->size > 1 ) {
-        sCuIdx = 0;
+        sCuIdx = sHist->size - 1;
       } else {
         sCuIdx = -1;
       }
@@ -505,17 +509,17 @@ BS_IDX_T
   BS_IDX_T l = bsstrings_find (sHist, pStr);
   if ( l == BS_IDX_NULL )
   {
-    BS_DO_ERR (l = bsstrings_add_inc (sHist, pStr, BS_IDX_10))
+    BS_DO_CEERR (l = bsstrings_add_inc (sHist, pStr, BS_IDX_10))
     if ( errno == 0 )
     {
       sCuIdx = l;
       s_on_hist_adddel ();
       l = BS_IDX_NULL;
     }
-  } else if ( l < sHist->size - 1 ) {
-    bsstrings_move (sHist, l, sHist->size - 1);
-    l = sHist->size - 1;
+  } else {
     sCuIdx = l;
+    //bsstrings_move (sHist, l, sHist->size - 1); keep hystory!!!
+    //l = sHist->size - 1;
   }
   if ( errno == 0 && sHisWin != NULL )
   {

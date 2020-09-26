@@ -63,12 +63,12 @@ BS_IDX_T bsdiixrmfindtst_irtix (BsDiIxTxRm *pDiIxRm, BS_CHAR_T *pIwrd,
  * <p>Find all matched words in given dictionary and IDX file.</p>
  * @param pDiIx - dictionary and its whole index in memory
  * @param pIwrd - word(sub) to match in AB coding
- * @param p_irtrd first matched IRT record
+ * @param pIrtrd first matched IRT record
  * @param pFdWrds - collection to add found record
  * @set errno if error.
  **/
 void bsdiixfindtst_mtch (BsDiIxTx *pDiIx, BS_CHAR_T *pIwrd,
-                            BsDicFindIrtRd *p_irtrd, BsDiFdWds *pFdWrds);
+                            BsDicFindIrtRd *pIrtrd, BsDiFdWds *pFdWrds);
 
 /**
  * <p>Find all matched words in given dictionary and IDX in RAM by given IRT record's index.</p>

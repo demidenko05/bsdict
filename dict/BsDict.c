@@ -148,7 +148,7 @@ static gboolean
 }
 
 static void 
-  s_play_au (GtkWidget *pBtn, gpointer pDt)
+  s_play_au (GtkWidget *pBtn, gpointer pDt) //TODO replace with abstraction (i.e. remove implementation into lib)
 {
   //vars:
   FILE *oggf;

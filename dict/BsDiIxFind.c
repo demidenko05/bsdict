@@ -181,65 +181,70 @@ void
  * @param pDiIx - dictionary and its whole index in memory
  * @param pWrd - word to match
  * @param pIwrd - word to match in AB coding
- * @param p_irtrd first matched IRT record
+ * @param pIrtrd first matched IRT record
  * @return d.string if found or NULL
  * @set errno if error.
  **/
-BsDicString *bsdiixfindtst_omtch(BsDiIxTx *pDiIx, BsString *pWrd,
-  BS_CHAR_T *pIwrd, BsDicFindIrtRd *p_irtrd) {
-  bool isdbg = bslog_is_debug(BS_DEBUGL_DICIDXFIND + 70);
-  if(isdbg) {
-    BSLOG_LOG(BSLDEBUG, "word: %s\n", pWrd->val)
-  }
-  if (p_irtrd->dwolt_start != BS_IDX_NULL) { //where is direct iwords:
+BsDicString*
+  bsdiixfindtst_omtch (BsDiIxTx *pDiIx, BsString *pWrd,
+                       BS_CHAR_T *pIwrd, BsDicFindIrtRd *pIrtrd)
+{
+#define BSULD1_CHR_CNT 100
+  BS_WCHAR_T wrd[BSULD1_CHR_CNT];
+  bool isdbg = bslog_is_debug (BS_DEBUGL_DICIDXFIND + 70);
+  if ( isdbg )
+              { BSLOG_LOG (BSLDEBUG, "word: %s\n", pWrd->val) }
+  if ( pIrtrd->dwolt_start != BS_IDX_NULL )
+  { //where is direct iwords:
     BS_IDX_T dwidx;
     BS_FOFST_T ofst;
-    if (p_irtrd->idx == pDiIx->head->irtSz - BS_IDX_1) {
-      for (dwidx = p_irtrd->dwolt_start;
-        dwidx < pDiIx->head->dwoltSz; dwidx++) {
-        BS_DO_E_RETN(BsDicString *candidate = bsdiix_read_owrd(pDiIx, dwidx))
-        if(isdbg) {
-          BSLOG_LOG(BSLDEBUG, "candidate: %s\n", candidate->val)
-        }
-        if (strcmp(candidate->val, pWrd->val) == 0) {
-          return candidate;
-        }
-        bsdicstring_free(candidate);
+    if ( pIrtrd->idx == pDiIx->head->irtSz - BS_IDX_1 )
+    {
+      for ( dwidx = pIrtrd->dwolt_start; dwidx < pDiIx->head->dwoltSz; dwidx++ )
+      {
+        BS_DO_E_RETN (BsDicString *candidate = bsdiix_read_owrd (pDiIx, dwidx))
+        if ( isdbg )
+                    { BSLOG_LOG (BSLDEBUG, "candidate: %s\n", candidate->val) }
+        if ( strcmp (candidate->val, pWrd->val) == 0 )
+                                { return candidate; }
+        bsdicstring_free (candidate);
       }
     } else {
-      BS_IDX_T dwidxprev = p_irtrd->dwolt_start - BS_IDX_1;
-      while (true) {
-        bool is_str_match = bsdicidx_istr_how_match(pIwrd, p_irtrd->idx_subwrd) > 0;
-        if (p_irtrd->dwolt_start != BS_IDX_NULL) {
-          for (dwidx = dwidxprev + BS_IDX_1; dwidx <= p_irtrd->dwolt_start; dwidx++) {
-            if (!is_str_match && dwidx == p_irtrd->dwolt_start) {
-              //stop range from previous matched dwolt_start to current unmatched one
-              return NULL;
-            }
-            BS_DO_E_RETN(BsDicString *candidate = bsdiix_read_owrd(pDiIx, dwidx))
-            if(isdbg) {
-              BSLOG_LOG(BSLDEBUG, "candidate: %s\n", candidate->val)
-            }
-            if (strcmp(candidate->val, pWrd->val) == 0) {
-              return candidate;
-            }
+      BS_IDX_T dwidxprev = pIrtrd->dwolt_start - BS_IDX_1;
+      while ( true )
+      {
+        if ( isdbg )
+        {
+          bsdicidxab_istrn_to_wstr (pIrtrd->idx_subwrd, wrd, BSULD1_CHR_CNT, pDiIx->head->ab);
+          BSLOG_LOG (BSLDEBUG, "IRT idx=%ld, dwolt_start=%ld, word=%ls\n", pIrtrd->idx, pIrtrd->dwolt_start, wrd)
+        }
+        bool isIrtwMtch = bsdicidx_istr_how_match (pIwrd, pIrtrd->idx_subwrd) > 0;
+        if ( pIrtrd->dwolt_start != BS_IDX_NULL )
+        {
+          for ( dwidx = dwidxprev + BS_IDX_1; dwidx <= pIrtrd->dwolt_start; dwidx++ )
+          {
+            if ( !isIrtwMtch && dwidx == pIrtrd->dwolt_start )
+                        { return NULL; } //stop range from previous matched dwolt_start to current unmatched one
+            BS_DO_E_RETN (BsDicString *candidate = bsdiix_read_owrd (pDiIx, dwidx))
+            if ( isdbg )
+                            { BSLOG_LOG (BSLDEBUG, "dwoltIdx=%ld, candidate: %s\n", dwidx, candidate->val) }
+            if ( strcmp (candidate->val, pWrd->val) == 0 )
+                          { return candidate; }
             bsdicstring_free(candidate);
-            dwidxprev = p_irtrd->dwolt_start;
+            dwidxprev = pIrtrd->dwolt_start;
           }
         }
-        if (!is_str_match) {
-          return NULL;
-        }
-        p_irtrd->idx++;
-        if (p_irtrd->idx == pDiIx->head->irtSz) {
-          break;
-        }
-        ofst = p_irtrd->idx * (BDI_IRTRD_FIXED_SIZE(pDiIx->head->mxIrWdSz)) + pDiIx->irtOfst;
-        BS_DO_E_RETN(bsfseek_goto(pDiIx->idxFl, ofst))
-        BS_DO_E_RETN(bsfread_bschars(p_irtrd->idx_subwrd, pDiIx->head->mxIrWdSz, pDiIx->idxFl))
-        BS_DO_E_RETN(bsfread_bsindex(&p_irtrd->dwolt_start, pDiIx->idxFl))
-        BS_DO_E_RETN(bsfread_bssmall(&p_irtrd->i2wpt_quantity, pDiIx->idxFl))
-        BS_DO_E_RETN(bsfread_bsindex(&p_irtrd->i2wpt_start, pDiIx->idxFl))
+        if ( !isIrtwMtch )
+                          { return NULL; }
+        pIrtrd->idx++;
+        if ( pIrtrd->idx == pDiIx->head->irtSz )
+                          { break; }
+        ofst = pIrtrd->idx * (BDI_IRTRD_FIXED_SIZE (pDiIx->head->mxIrWdSz)) + pDiIx->irtOfst;
+        BS_DO_E_RETN (bsfseek_goto (pDiIx->idxFl, ofst))
+        BS_DO_E_RETN (bsfread_bschars (pIrtrd->idx_subwrd, pDiIx->head->mxIrWdSz, pDiIx->idxFl))
+        BS_DO_E_RETN (bsfread_bsindex (&pIrtrd->dwolt_start, pDiIx->idxFl))
+        BS_DO_E_RETN (bsfread_bssmall (&pIrtrd->i2wpt_quantity, pDiIx->idxFl))
+        BS_DO_E_RETN (bsfread_bsindex (&pIrtrd->i2wpt_start, pDiIx->idxFl))
       }
     }
   }
@@ -250,28 +255,28 @@ BsDicString *bsdiixfindtst_omtch(BsDiIxTx *pDiIx, BsString *pWrd,
  * <p>Find all matched words in given dictionary and IDX file.</p>
  * @param pDiIx - dictionary and its whole index in memory
  * @param pIwrd - word(sub) to match in AB coding
- * @param p_irtrd first matched IRT record
+ * @param pIrtrd first matched IRT record
  * @param pFdWrds - collection to add found record
  * @set errno if error.
  **/
 void bsdiixfindtst_mtch(BsDiIxTx *pDiIx,
-  BS_CHAR_T *pIwrd, BsDicFindIrtRd *p_irtrd, BsDiFdWds *pFdWrds)
+  BS_CHAR_T *pIwrd, BsDicFindIrtRd *pIrtrd, BsDiFdWds *pFdWrds)
 {
   BS_IDX_T dwidx;
   BS_FOFST_T ofst;
-  if (p_irtrd->dwolt_start != BS_IDX_NULL) { //where is direct iwords:
-    if (p_irtrd->idx == pDiIx->head->irtSz - BS_IDX_1) {
-      for (dwidx = p_irtrd->dwolt_start;
+  if (pIrtrd->dwolt_start != BS_IDX_NULL) { //where is direct iwords:
+    if (pIrtrd->idx == pDiIx->head->irtSz - BS_IDX_1) {
+      for (dwidx = pIrtrd->dwolt_start;
         dwidx < pDiIx->head->dwoltSz; dwidx++) {
         BS_DO_E_RET (bsdiix_read_wrd (pDiIx, pIwrd, dwidx, pFdWrds))
         if (pFdWrds->size >= BDI_MAX_MATCHED_WORDS) {
           return;
         }
       }
-      if (p_irtrd->i2wpt_quantity > 0) {
-        BS_IDX_T i2wptcl = p_irtrd->i2wpt_quantity;
+      if (pIrtrd->i2wpt_quantity > 0) {
+        BS_IDX_T i2wptcl = pIrtrd->i2wpt_quantity;
         for (BS_IDX_T l = BS_IDX_0; l < i2wptcl; l++) {
-          ofst = (p_irtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
+          ofst = (pIrtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
           BS_DO_E_RET(bsfseek_goto(pDiIx->idxFl, ofst))
           BS_DO_E_RET(bsfread_bsindex(&dwidx, pDiIx->idxFl))
           BS_DO_E_RET(bsdiix_read_wrd (pDiIx, pIwrd, dwidx, pFdWrds))
@@ -281,12 +286,12 @@ void bsdiixfindtst_mtch(BsDiIxTx *pDiIx,
         }
       }
     } else {
-      BS_IDX_T dwidxprev = p_irtrd->dwolt_start - BS_IDX_1;
+      BS_IDX_T dwidxprev = pIrtrd->dwolt_start - BS_IDX_1;
       while (true) {
-        bool is_str_match = bsdicidx_istr_how_match(pIwrd, p_irtrd->idx_subwrd) > 0;
-        if (p_irtrd->dwolt_start != BS_IDX_NULL) {
-          for (dwidx = dwidxprev + BS_IDX_1; dwidx <= p_irtrd->dwolt_start; dwidx++) {
-            if (!is_str_match && dwidx == p_irtrd->dwolt_start) {
+        bool isIrtwMtch = bsdicidx_istr_cmp_match(pIrtrd->idx_subwrd, pIwrd) == 0;
+        if (pIrtrd->dwolt_start != BS_IDX_NULL) {
+          for (dwidx = dwidxprev + BS_IDX_1; dwidx <= pIrtrd->dwolt_start; dwidx++) {
+            if (!isIrtwMtch && dwidx == pIrtrd->dwolt_start) {
               //stop range from previous matched dwolt_start to current unmatched one
               return;
             }
@@ -294,16 +299,16 @@ void bsdiixfindtst_mtch(BsDiIxTx *pDiIx,
             if ( pFdWrds->size >= BDI_MAX_MATCHED_WORDS ) {
               return;
             }
-            dwidxprev = p_irtrd->dwolt_start;
+            dwidxprev = pIrtrd->dwolt_start;
           }
         }
-        if (!is_str_match) {
+        if (!isIrtwMtch) {
           return;
         }
-        if (p_irtrd->i2wpt_quantity > 0) {
-          BS_IDX_T i2wptcl = p_irtrd->i2wpt_quantity;
+        if (pIrtrd->i2wpt_quantity > 0) {
+          BS_IDX_T i2wptcl = pIrtrd->i2wpt_quantity;
           for (BS_IDX_T l = BS_IDX_0; l < i2wptcl; l++) {
-            ofst = (p_irtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
+            ofst = (pIrtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
             BS_DO_E_RET(bsfseek_goto(pDiIx->idxFl, ofst))
             BS_DO_E_RET(bsfread_bsindex(&dwidx, pDiIx->idxFl))
             BS_DO_E_RET(bsdiix_read_wrd (pDiIx, pIwrd, dwidx, pFdWrds))
@@ -312,27 +317,27 @@ void bsdiixfindtst_mtch(BsDiIxTx *pDiIx,
             }
           }
         }
-        p_irtrd->idx++;
-        if (p_irtrd->idx == pDiIx->head->irtSz) {
+        pIrtrd->idx++;
+        if (pIrtrd->idx == pDiIx->head->irtSz) {
           break;
         }
-        ofst = p_irtrd->idx * (BDI_IRTRD_FIXED_SIZE(pDiIx->head->mxIrWdSz)) + pDiIx->irtOfst;
+        ofst = pIrtrd->idx * (BDI_IRTRD_FIXED_SIZE(pDiIx->head->mxIrWdSz)) + pDiIx->irtOfst;
         BS_DO_E_RET(bsfseek_goto(pDiIx->idxFl, ofst))
-        BS_DO_E_RET(bsfread_bschars(p_irtrd->idx_subwrd, pDiIx->head->mxIrWdSz, pDiIx->idxFl))
-        BS_DO_E_RET(bsfread_bsindex(&p_irtrd->dwolt_start, pDiIx->idxFl))
-        BS_DO_E_RET(bsfread_bssmall(&p_irtrd->i2wpt_quantity, pDiIx->idxFl))
-        BS_DO_E_RET(bsfread_bsindex(&p_irtrd->i2wpt_start, pDiIx->idxFl))
+        BS_DO_E_RET(bsfread_bschars(pIrtrd->idx_subwrd, pDiIx->head->mxIrWdSz, pDiIx->idxFl))
+        BS_DO_E_RET(bsfread_bsindex(&pIrtrd->dwolt_start, pDiIx->idxFl))
+        BS_DO_E_RET(bsfread_bssmall(&pIrtrd->i2wpt_quantity, pDiIx->idxFl))
+        BS_DO_E_RET(bsfread_bsindex(&pIrtrd->i2wpt_start, pDiIx->idxFl))
       }
     }
   } else { //only i2words:
-    if (p_irtrd->i2wpt_quantity <= 0) { //previous validation must fail
+    if (pIrtrd->i2wpt_quantity <= 0) { //previous validation must fail
       errno = BSE_VALIDATE_ERR;
       BSLOG_ERR
       return;
     }
-    BS_IDX_T i2wptcl = p_irtrd->i2wpt_quantity;
+    BS_IDX_T i2wptcl = pIrtrd->i2wpt_quantity;
     for (BS_IDX_T l = BS_IDX_0; l < i2wptcl; l++) {
-      ofst = (p_irtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
+      ofst = (pIrtrd->i2wpt_start + l) * (BDI_I2WPTRD_SIZE) + pDiIx->i2wptOfst;
       BS_DO_E_RET(bsfseek_goto(pDiIx->idxFl, ofst))
       BS_DO_E_RET(bsfread_bsindex(&dwidx, pDiIx->idxFl))
       BS_DO_E_RET(bsdiix_read_wrd (pDiIx, pIwrd, dwidx, pFdWrds))
@@ -379,10 +384,10 @@ void
       BS_IDX_T irtidxn = p_irtidx;
       BS_IDX_T dwidxprev = pDiIxRm->irt[p_irtidx]->dwolt_start - BS_IDX_1;
       do {
-        bool is_str_match = bsdicidx_istr_how_match(pIwrd, pDiIxRm->irt[irtidxn]->idx_subwrd) > 0;
+        bool isIrtwMtch = bsdicidx_istr_how_match(pIwrd, pDiIxRm->irt[irtidxn]->idx_subwrd) > 0;
         if (pDiIxRm->irt[irtidxn]->dwolt_start != BS_IDX_NULL) {
           for (dwidx = dwidxprev + BS_IDX_1; dwidx <= pDiIxRm->irt[irtidxn]->dwolt_start; dwidx++) {
-            if (!is_str_match && dwidx == pDiIxRm->irt[irtidxn]->dwolt_start) {
+            if (!isIrtwMtch && dwidx == pDiIxRm->irt[irtidxn]->dwolt_start) {
               return;
             }
             BS_DO_E_RET (bsdiixrm_read_wrd (pDiIxRm, pIwrd, dwidx, pFdWrds))
@@ -392,7 +397,7 @@ void
             dwidxprev = pDiIxRm->irt[irtidxn]->dwolt_start;
           }
         }
-        if (!is_str_match) {
+        if (!isIrtwMtch) {
           return;
         }
         if (pDiIxRm->irt[irtidxn]->i2wpt_quantity > 0) {
@@ -445,6 +450,7 @@ BsDicFindIrtRd*
   BS_IDX_T irtEnd = pIrtEnd;
   BS_CHAR_T irtstr[pDiIx->head->mxIrWdSz];
   BS_FOFST_T ofst = BS_IDX_NULL;
+  int irtwlen, iwlen = bsdicidx_istr_len (pIwrd);
   if ( isDbg )
   {
     bsdicidxab_istrn_to_wstr (pIwrd, wrd, BSULD1_CHR_CNT, pDiIx->head->ab);
@@ -468,6 +474,9 @@ BsDicFindIrtRd*
       BS_DO_E_RETN (bsfread_bsindex (&irtrd->dwolt_start, pDiIx->idxFl))
       BS_DO_E_RETN (bsfread_bssmall (&irtrd->i2wpt_quantity, pDiIx->idxFl))
       BS_DO_E_RETN (bsfread_bsindex (&irtrd->i2wpt_start, pDiIx->idxFl))
+      irtwlen = bsdicidx_istr_len (irtstr);
+      if ( hcmpr == iwlen && irtwlen == iwlen )
+                    { return irtrd; }
       if ( midIdx > BS_IDX_0 )
       { //check lower words
         BS_IDX_T irtidxn = midIdx;
@@ -491,6 +500,9 @@ BsDicFindIrtRd*
             BS_DO_E_RETN (bsfread_bsindex (&irtrd->dwolt_start, pDiIx->idxFl))
             BS_DO_E_RETN (bsfread_bssmall (&irtrd->i2wpt_quantity, pDiIx->idxFl))
             BS_DO_E_RETN (bsfread_bsindex (&irtrd->i2wpt_start, pDiIx->idxFl))
+            irtwlen = bsdicidx_istr_len (irtstr);
+            if ( hcmpr == iwlen && irtwlen == iwlen )
+                          { return irtrd; }
           } else {
             break;
           }
@@ -519,6 +531,9 @@ BsDicFindIrtRd*
             BS_DO_E_RETN (bsfread_bsindex (&irtrd->dwolt_start, pDiIx->idxFl))
             BS_DO_E_RETN (bsfread_bssmall (&irtrd->i2wpt_quantity, pDiIx->idxFl))
             BS_DO_E_RETN (bsfread_bsindex (&irtrd->i2wpt_start, pDiIx->idxFl))
+            irtwlen = bsdicidx_istr_len (irtstr);
+            if ( hcmpr == iwlen && irtwlen == iwlen )
+                          { return irtrd; }
           } else {
             break;
           }

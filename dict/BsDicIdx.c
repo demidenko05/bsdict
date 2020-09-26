@@ -223,11 +223,16 @@ int
     if ( p_iwrd[i] == 0 || p_irtwrd[i] == 0 )
                 { return i; }
 
-    if ( p_iwrd[i] > p_irtwrd[i] )
+    if ( p_iwrd[i] != p_irtwrd[i] )
     {
-      return 0;
-    } else if ( p_iwrd[i] < p_irtwrd[i] ) {
-      return -1;
+      if ( i > 0 )
+                    { return i; }
+      if ( p_iwrd[i] > p_irtwrd[i] )
+      {
+        return 0;
+      } else if ( p_iwrd[i] < p_irtwrd[i] ) {
+        return -1;
+      }
     }
   }
 }
