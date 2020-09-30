@@ -173,7 +173,11 @@ static gboolean
   } else {
     char *cpth = s_choose_fhist();
     if ( cpth != NULL )
-        { BS_DO_CEE_RETF (pth = bsstring_new (cpth)) }
+    { 
+      BS_DO_CEE_RETF (pth = bsstring_new (cpth))
+    } else {
+      return FALSE;
+    }
   }
   FILE *flConf = fopen (pth->val, "w");
   bsstring_free (pth);
