@@ -130,7 +130,7 @@ void bsstrings_clear(BsStrings *pSet);
 BS_IDX_T bsstrings_add_inc(BsStrings *pSet, BsString *pObj, BS_IDX_T pInc);
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear and free array's element with given index and shrink array and decrease size.</p>
  * @param pSet - data set
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS

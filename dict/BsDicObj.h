@@ -175,7 +175,7 @@ BsDicObjs *bsdicobjs_free (BsDicObjs *pDiObjs);
 BS_IDX_T bsdicobjs_add_inc (BsDicObjs *pDiObjs, BsDicObj *pObj, BS_IDX_T pInc);
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear and free array's element with given index and shrink array and decrease size.</p>
  * @param pDiObjs - data set
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS

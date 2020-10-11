@@ -574,13 +574,15 @@ void
 }
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear array's cell with given index and shrink array and decrease size.
+ * If parameter object's destructor is not NULL, then free object.</p>
  * @param pSet - data set
+ * @param pObjDestr - record's destructor, maybe NULL
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS
  **/
 void
-  bsdatasettus_remove_shrink (BsDataSetTus *pSet, BS_IDX_T pIdx)
+  bsdatasettus_remove_shrink (BsDataSetTus *pSet, BS_IDX_T pIdx, Bs_Destruct *pObjDestr)
 {
   if ( pIdx < BS_IDX_0 || pIdx >= pSet->size )
   {
@@ -588,11 +590,15 @@ void
     BSLOG_ERR
     return;
   }
-  pSet->vals[pIdx] = NULL;
-  for ( BS_IDX_T l = pIdx + BS_IDX_1; l < pSet->size; l++ )
+  if ( pObjDestr != NULL )
+  {
+    pObjDestr (pSet->vals[pIdx]);
+  }
+  for (BS_IDX_T l = pIdx + BS_IDX_1; l < pSet->size; l++ )
   {
     pSet->vals[l - BS_IDX_1] = pSet->vals[l];
   }
+  pSet->vals[pSet->size - BS_IDX_1] = NULL;
   pSet->size--;
 }
 
@@ -687,7 +693,7 @@ BS_IDX_T bsvoidmeths_add_inc(BsVoidMeths *pSet, BsVoid_Method *pObj, BS_IDX_T pI
 }
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear array's method with given index and shrink array and decrease size.</p>
  * @param pSet - data set
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS
@@ -695,7 +701,7 @@ BS_IDX_T bsvoidmeths_add_inc(BsVoidMeths *pSet, BsVoid_Method *pObj, BS_IDX_T pI
 void
   bsvoidmeths_remove_shrink (BsVoidMeths *pSet, BS_IDX_T pIdx)
 {
-  bsdatasettus_remove_shrink ((BsDataSetTus*) pSet, pIdx);
+  bsdatasettus_remove_shrink ((BsDataSetTus*) pSet, pIdx, NULL);
 }
 
 /**

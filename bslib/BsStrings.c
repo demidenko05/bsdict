@@ -267,7 +267,7 @@ BS_IDX_T
 }
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear and free array's element with given index and shrink array and decrease size.</p>
  * @param pSet - data set
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS
@@ -275,7 +275,7 @@ BS_IDX_T
 void
   bsstrings_remove_shrink (BsStrings *pSet, BS_IDX_T pIdx)
 {
-  bsdatasettus_remove_shrink ((BsDataSetTus*) pSet, pIdx);
+  bsdatasettus_remove_shrink ((BsDataSetTus*) pSet, pIdx, (Bs_Destruct*) &bsstring_free);
 }
 
 /**

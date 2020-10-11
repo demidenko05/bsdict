@@ -20,12 +20,14 @@ See the LICENSE in the root source folder */
 //Shared data:
   //History APP-scoped, elements on demand scoped shared with dict.entry:
 static BsStrings *sHist = NULL;
-  //current index:
+  //current index in non-sorted history:
 static int sCuIdx = -1;
 
 //Data:
   //Sorting type AB(true)/historical+manually
 static bool sSortAb = false;
+  //Do not refresh content of selected entry
+static bool sNoRefCnt = false;
   //AB indexes set APP-scoped:
 static BsIdxSet *sIdxSetAb = NULL;
 
@@ -107,43 +109,50 @@ static char*
 static void
   s_refresh_list ()
 {
+  int i, j;
   if ( sHist == NULL )
                 { return ; }
 
   gtk_list_clear_items (((GtkList*) sGtkList), 0, -1);
 
-  for ( int i = sHist->size - 1; i >= 0; i-- )
+  if ( sSortAb )
   {
-    int j = i;
-    if ( sSortAb )
+    errno = 0;
+    if ( sIdxSetAb == NULL )
     {
-      errno = 0;
-      if ( sIdxSetAb == NULL )
-      {
-        sIdxSetAb = bsstrings_create_idxset (sHist, sHist->size + BS_IDX_100);
-      }
-      else if ( sIdxSetAb->size == BS_IDX_0 )
-      {
-        bsstrings_redo_idxset (sHist, sIdxSetAb, sHist->size + BS_IDX_100);
-      }
-      if ( sIdxSetAb != NULL && sIdxSetAb->size == sHist->size )
-          { j = sIdxSetAb->vals[i]; }
-      errno = 0;
+      sIdxSetAb = bsstrings_create_idxset (sHist, sHist->size + BS_IDX_100);
     }
+    else if ( sIdxSetAb->size == BS_IDX_0 )
+    {
+      bsstrings_redo_idxset (sHist, sIdxSetAb, sHist->size + BS_IDX_100);
+    }
+  }
+
+  for ( i = sHist->size - 1; i >= 0; i-- )
+  {
+    j = i;
+    if ( sSortAb && sIdxSetAb != NULL && sIdxSetAb->size == sHist->size )
+                { j = sIdxSetAb->vals[i]; }
     GtkWidget *lstItm = gtk_list_item_new_with_label (sHist->vals[j]->val);
 
     gtk_container_add (GTK_CONTAINER (sGtkList), lstItm);
 
     gtk_widget_show(lstItm);
   }
+  errno = 0;
   if ( sCuIdx != -1 )
   {
-    int i = sCuIdx;
+    i = sHist->size - 1 - sCuIdx;
     if ( sSortAb )
     {
-      i = sIdxSetAb->vals[i];
-    } else {
-      i = sHist->size - 1 - sCuIdx;
+      for ( j = 0; j <= sIdxSetAb->size; j++ )
+      {
+        if ( strcmp (sHist->vals[sCuIdx]->val, sHist->vals[sIdxSetAb->vals[j]]->val) == 0 )
+        {
+          i = sHist->size - 1 - j;
+          break;
+        }
+      }
     }
     gtk_list_select_item (((GtkList*) sGtkList), i);
   }
@@ -241,7 +250,7 @@ static void
           bsstrings_clear (sHist);
           sCuIdx = -1;
           s_on_hist_adddel ();
-          s_refresh_list (); //TODO excessive?
+          //s_refresh_list (); //TODO excessive?
         } else {
           return;
         }
@@ -285,6 +294,7 @@ static void
   if ( sCuIdx >= 0 && bsstrings_move_up (sHist, sCuIdx) )
   {
     sCuIdx++;
+    sNoRefCnt = true;
     s_refresh_list ();
   }
 }
@@ -296,6 +306,7 @@ static void
   if ( sCuIdx > 0 && bsstrings_move_down(sHist, sCuIdx) )
   {
     sCuIdx--;
+    sNoRefCnt = true;
     s_refresh_list ();
   }
 }
@@ -315,13 +326,27 @@ static void
   if ( sGtkList != NULL //invoked on destroy!?
     && ((GtkList*) sGtkList)->selection != NULL )
   {
-    sCuIdx = g_list_index (((GtkList*) sGtkList)->children,
-                            ((GtkList*) sGtkList)->selection->data);
-    sCuIdx = sHist->size - 1 - sCuIdx;
-    int i = sCuIdx;
+    int i = g_list_index (((GtkList*) sGtkList)->children,
+                          ((GtkList*) sGtkList)->selection->data);
+    
+    sCuIdx = sHist->size - 1 - i;
     if ( sSortAb )
-              { i = sIdxSetAb->vals[i]; }
-    bsdict_show (sHist->vals[i]);
+    {
+      for ( int j = 0; j <= sIdxSetAb->size; j++ )
+      {
+        if ( strcmp (sHist->vals[j]->val, sHist->vals[sIdxSetAb->vals[sCuIdx]]->val) == 0 )
+        {
+          sCuIdx = j;
+          break;
+        }
+      }
+    }
+    if ( !sNoRefCnt )
+    {
+      bsdict_show (sHist->vals[sCuIdx]);
+    } else {
+      sNoRefCnt = false;
+    }
   }
 }
 
@@ -358,6 +383,7 @@ static void
       if ( sHist->size == 1 )
               { bsdict_on_histclear (); }
       errno = 0;
+      bsdict_on_histclear ();
       bsstrings_remove_shrink (sHist, sCuIdx);
       if ( sCuIdx > 0 )
       {
@@ -377,6 +403,7 @@ static void
     sSortAb = !sSortAb;
     gtk_widget_set_sensitive ((GtkWidget*) sBtnUp, !sSortAb);
     gtk_widget_set_sensitive ((GtkWidget*) sBtnDown, !sSortAb);
+    sNoRefCnt = true;
     s_refresh_list ();
   }
   else if ( *pMenuVal == ESAVE )
@@ -527,6 +554,7 @@ BS_IDX_T
   }
   if ( errno == 0 && sHisWin != NULL )
   {
+    sNoRefCnt = true;
     s_refresh_list ();
   }
   return l;

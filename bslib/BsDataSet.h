@@ -116,12 +116,14 @@ BS_IDX_T bsdatasettus_add_sort_inc(BsDataSetTus *pSet, void *pObj, BS_IDX_T pInc
   Bs_Compare *pCompare, bool pYesDup);
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear array's cell with given index and shrink array and decrease size.
+ * If parameter object's destructor is not NULL, then free object.</p>
  * @param pSet - data set
  * @param pIdx - member index
+ * @param pObjDestr - record's destructor, maybe NULL
  * @set errno - BSE_ARR_OUT_OF_BOUNDS
  **/
-void bsdatasettus_remove_shrink(BsDataSetTus *pSet, BS_IDX_T pIdx);
+void bsdatasettus_remove_shrink(BsDataSetTus *pSet, BS_IDX_T pIdx, Bs_Destruct *pObjDestr);
 
 /**
  * <p>Move object UP (forth) if parameters OK. This is for manually sorting.
@@ -262,7 +264,7 @@ BsVoidMeths *bsvoidmeths_free(BsVoidMeths *pSet);
 BS_IDX_T bsvoidmeths_add_inc(BsVoidMeths *pSet, BsVoid_Method *pObj, BS_IDX_T pInc);
 
 /**
- * <p>Clear (set to NULL) array's cell with given index and shrink array and decrease size.</p>
+ * <p>Clear array's method with given index and shrink array and decrease size.</p>
  * @param pSet - data set
  * @param pIdx - member index
  * @set errno - BSE_ARR_OUT_OF_BOUNDS
