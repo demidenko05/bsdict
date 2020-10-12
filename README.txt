@@ -31,22 +31,21 @@ features:
 
 * index file is not cached by default (LSA IDX in RAM is not yet implemented, and so does interface to switch using index in file or in memory)
 
-rationale of having dictionary non-zipped and index file non-cached:
+rationale of having a dictionary non-zipped and index file non-cached:
   nowadays a lot of notebooks, tablets and smartphones have non-HDD storage,
   i.e. files are placed in RAM (random access memory).
   So, unzipping and caching never help in this way.
   Computers with HDD already cache files.
 
-! if ZIPPED dictionary allows to seek record without unzipping, then it's more optimal approach.
+! if a ZIPPED dictionary allows to seek a record (word's content) without unzipping, then it's more optimal approach.
   This is usually done by zipping only word's definition (content), i.e. head-words (keys) and file structure stay unzipped.
   For example PDF has same approach - only sub-contents (e.g. page's text) zipped, not headers (their keys/description).
   But dictzip uses actually GZIP archiving of whole file, so you have additional memory consumption on zipped dictionaries.
 
 It has no "internal" sound-player yet, i.e. it invokes external player to play sound file placed into TMP.
-But, you should never get sad, because this approach seems to be good (minimal system load),
-as this is "already cached system".
+But, you should never get sad, because this approach seems to be good (minimal system overhead)".
 
-You can check consumption of system resources (RAM), and you will found that BSDict is really resources-friendly (cheap).
+Partially implemented "history contains of data pointers" (i.e. offsets and other data to find a content without the IDX file).
 
 ------------------------------------------
 licenses:
