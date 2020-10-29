@@ -5,6 +5,8 @@ DEBUG LEVEL from 20000 ... 49999
 To build it:
 0) of course, you should have installed GTK2, make, gcc, ld, pkg-config...:
 	apt-get install libvorbis-dev
+  or install libogg and libvorbis from source:
+  https://xiph.org/downloads/ libogg-1.3.4.tar.xz then libvorbis-1.3.7.tar.gz
 1) unpack BsDict and make:
  make
  #as root:
